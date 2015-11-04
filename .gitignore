@@ -1,0 +1,8 @@
+# Local project files (IDE/Configuration/...)
+.idea
+
+# debug files
+/lib/*
+/node_modules/*
+
+

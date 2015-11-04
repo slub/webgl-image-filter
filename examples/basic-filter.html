@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Simple Openlayers Image Filter Example</title>
+    <link rel="shortcut icon" href="#" />
+    <link rel="stylesheet" href="/lib/bootstrap/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/lib/openlayers/css/ol.css">
+    <link rel="stylesheet" href="/lib/jquery-ui/themes/base/all.css">
+    <script src="/lib/openlayers/ol.debug.js"></script>
+    <script src="/lib/jquery/jquery.min.js"></script>
+    <script src="/lib/jquery-ui/jquery-ui.min.js"></script>
+    <script src="/lib/closure-library/closure/goog/base.js" type="text/javascript"></script>
+    <script src="/src/glif-deps.js"></script>
+    <style>
+        .container { margin-left: 0px; margin-right: 0px; padding-left: 0px; padding-right: 0px;}
+        #map { height: 600px; }
+        .label-tooltip { border:0; color:#f6931f; width: 20px; }
+        .slider { height: 10px; margin-left: 10px; margin-right: 10px; }
+        .trigger { padding: 5px 3px 5px 3px; }
+        label {font-weight: normal;}
+    </style>
+    <script>
+        goog.require('glif');
+    </script>
+</head>
+<body>
+    <header>
+        <h1>Color matrix image filter example</h1>
+        <p>This example shows multiple simple color matrix filters used with an Openlayers 3 map. The filter can be chained.</p>
+    </header>
+
+    <section class="content">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 ">
+                    <div id="map"></div>
+                </div>
+                <div class="col-lg-4">
+                     <div class="trigger">
+                        <form>
+                            <div class="checkbox">
+                                <label>
+                                    <input type="checkbox" id="brownie">brownie
+                                </label>
+                            </div>
+                            <div class="checkbox">
+                                <label>
+                                    <input type="checkbox" id="desaturateLuminance">desaturateLuminance
+                                </label>
+                            </div>
+                            <div class="checkbox">
+                                <label>
+                                    <input type="checkbox" id="kodachrome">kodachrome
+                                </label>
+                            </div>
+                            <div class="checkbox">
+                                <label>
+                                    <input type="checkbox" id="negative">negative
+                                </label>
+                            </div>
+                            <div class="checkbox">
+                                <label>
+                                    <input type="checkbox" id="polaroid">polaroid
+                                </label>
+                            </div>
+                            <div class="checkbox">
+                                <label>
+                                    <input type="checkbox" id="sepia">sepia
+                                </label>
+                            </div>
+                            <div class="checkbox">
+                                <label>
+                                    <input type="checkbox" id="shiftToBGR">shiftToBGR
+                                </label>
+                            </div>
+                            <div class="checkbox">
+                                <label>
+                                    <input type="checkbox" id="technicolor">technicolor
+                                </label>
+                            </div>
+                            <div class="checkbox">
+                                <label>
+                                    <input type="checkbox" id="vintagePinhole">vintagePinhole
+                                </label>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        // first check if webgl is enabled
+        var _canvas = document.createElement('canvas'),
+            _gl = _canvas.getContext("webgl") || _canvas.getContext("experimental-webgl");
+        if( !_gl ) {
+            alert("Couldn't get WebGL context");
+        }
+
+        if (_gl) {
+            // initialize map
+            var layer =  new ol.layer.Tile({
+                source: new ol.source.OSM()
+            });
+
+            var map = new ol.Map({
+                layers: [ layer ],
+                renderer: 'webgl',
+                target: 'map',
+                view: new ol.View({
+                    center: [0, 0],
+                    zoom: 2
+                })
+            });
+
+            var filterUpdate = false,
+                filters = {
+                    brownie: false,
+                    desaturateLuminance: false,
+                    kodachrome: false,
+                    negative: false,
+                    polaroid: false,
+                    sepia: false,
+                    shiftToBGR: false,
+                    technicolor: false,
+                    vintagePinhole: false
+                };
+
+            layer.on('postcompose', function(evt) {
+                console.log('Postcompose event triggered');
+
+                var webglContext = evt['glContext'],
+                    canvas = webglContext.getCanvas();
+                if (webglContext !== undefined && webglContext !== null) {
+                    var gl = webglContext.getGL();
+
+                    if (!filterUpdate) {
+                        glif.reset();
+
+                        for (var filter in filters) {
+                            if (filters[filter] === true)
+                                glif.addFilter(filter);
+                        };
+
+                        filterUpdate = true;
+                    }
+
+                    glif.apply(gl, canvas);
+
+                    // for showing openlayers that the program changed
+                    // if missing openlayers will produce errors because it
+                    // expected other shaders in the webgl program
+                    webglContext.useProgram(undefined);
+                }
+            });
+
+            var updateFilter = function(paramKey, value) {
+                filters[paramKey] = value;
+                filterUpdate = false;
+                layer.changed();
+            }
+            $('#brownie').click(function(event) { updateFilter('brownie', event.target.checked); });
+            $('#desaturateLuminance').click(function(event) { updateFilter('desaturateLuminance', event.target.checked); });
+            $('#kodachrome').click(function(event) { updateFilter('kodachrome', event.target.checked); });
+            $('#negative').click(function(event) { updateFilter('negative', event.target.checked); });
+            $('#polaroid').click(function(event) { updateFilter('polaroid', event.target.checked); });
+            $('#sepia').click(function(event) { updateFilter('sepia', event.target.checked); });
+            $('#shiftToBGR').click(function(event) { updateFilter('shiftToBGR', event.target.checked); });
+            $('#technicolor').click(function(event) { updateFilter('technicolor', event.target.checked); });
+            $('#vintagePinhole').click(function(event) { updateFilter('vintagePinhole', event.target.checked); });
+        };
+    </script>
+</body>

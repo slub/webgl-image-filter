@@ -1,0 +1,16 @@
+{
+  "name": "zoomify-viewer",
+  "description": "Javascript dependencies for the zoomify-viewer application",
+  "version": "0.0.0",
+  "license": "MIT",
+  "private": true,
+  "dependencies": {
+    "jquery": "1.10.2",
+    "bootstrap": "~3.1.1"
+  },
+  "devDependencies": {
+    "closure-library": "https://github.com/google/closure-library.git",
+    "openlayers": "https://github.com/openlayers/ol3.git",
+    "jquery-ui": "~1.11.4"
+  }
+}

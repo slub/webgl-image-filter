@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Simple Openlayers Image Filter Example</title>
+    <link rel="shortcut icon" href="#" />
+    <link rel="stylesheet" href="/lib/bootstrap/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/lib/openlayers/css/ol.css">
+    <link rel="stylesheet" href="/lib/jquery-ui/themes/base/all.css">
+    <script src="/lib/openlayers/ol.debug.js"></script>
+    <script src="/lib/jquery/jquery.min.js"></script>
+    <script src="/lib/jquery-ui/jquery-ui.min.js"></script>
+    <script src="/lib/closure-library/closure/goog/base.js" type="text/javascript"></script>
+    <script src="/src/glif-deps.js"></script>
+    <style>
+        .container { margin-left: 0px; margin-right: 0px; padding-left: 0px; padding-right: 0px;}
+        #map { height: 600px; }
+        .label-tooltip { border:0; color:#f6931f; width: 20px; }
+        .slider { height: 10px; margin-left: 10px; margin-right: 10px; }
+        .trigger { padding: 5px 3px 5px 3px; }
+        label {font-weight: normal;}
+    </style>
+    <script>
+        goog.require('glif');
+    </script>
+</head>
+<body>
+    <header>
+        <h1>Emboss image filter example</h1>
+        <p>This example shows a emboss filter based on the convolution filters used with an OpenLayers 3 map zoomify layer.</p>
+    </header>
+
+    <section class="content">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 ">
+                    <div id="map"></div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="trigger">
+                        <p>
+                            <label for="value-emboss">emboss:</label>
+                            <input type="text" id="value-emboss" class="label-tooltip" readonly>
+                        </p>
+                        <div id="slider-emboss" class="slider"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        // first check if webgl is enabled
+        var _canvas = document.createElement('canvas'),
+            _gl = _canvas.getContext("webgl") || _canvas.getContext("experimental-webgl");
+        if( !_gl ) {
+            alert("Couldn't get WebGL context");
+        }
+
+        if (_gl) {
+            var height = 9741,
+                width = 9447,
+                url = 'http://fotothek.slub-dresden.de/zooms/df/dk/0004000/df_dk_0004657/';
+
+            var source = new ol.source.Zoomify({
+                url: url,
+                size: [width, height],
+                crossOrigin: '*'
+            });
+
+            var view = new ol.View({
+                projection: new ol.proj.Projection({
+                    code: 'ZOOMIFY',
+                    units: 'pixels',
+                    extent: [0, 0, width, height]
+                }),
+                center: [ width / 2, - height / 2],
+                zoom: 1,
+                maxZoom: 9
+            });
+
+            var layer = new ol.layer.Tile({
+                source: source
+            });
+
+            var map =  new ol.Map({
+                layers: [ layer ],
+                renderer: 'webgl',
+                target: 'map',
+                view: view
+            });
+
+            var filterUpdate = false,
+                    filters = {
+                        emboss: 0
+                    };
+
+            layer.on('postcompose', function(evt) {
+                console.log('Postcompose event triggered');
+
+                var webglContext = evt['glContext'],
+                    canvas = webglContext.getCanvas();
+                if (webglContext !== undefined && webglContext !== null) {
+                    var gl = webglContext.getGL();
+
+                    if (!filterUpdate) {
+                        glif.reset();
+
+                        for (var filter in filters) {
+                            glif.addFilter(filter, filters[filter]);
+                        };
+
+                        filterUpdate = true;
+                    }
+
+                    glif.apply(gl, canvas);
+
+                    // for showing openlayers that the program changed
+                    // if missing openlayers will produce errors because it
+                    // expected other shaders in the webgl program
+                    webglContext.useProgram(undefined);
+                }
+            });
+
+            var createSlider = function(id, min, max, steps) {
+                var sliderId = '#slider-' + id,
+                        feedbackId = '#value-' + id;
+
+                // initialize emboss slider
+                $(sliderId).slider({
+                    range: 'min',
+                    min: min,
+                    max: max,
+                    step: steps,
+                    value: filters[id],
+                    slide: function(event, ui) {
+                        $(feedbackId).val(ui.value);
+
+                        // update the filter
+                        filters[id] = ui.value;
+                        filterUpdate = false;
+                        layer.changed();
+                    }
+                });
+                $(feedbackId).val($(sliderId).slider('value'));
+            };
+
+            // create the sliders
+            createSlider('emboss', 0, 10, 1);
+        };
+    </script>
+</body>

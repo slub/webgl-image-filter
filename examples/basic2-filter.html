@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Simple Openlayers Image Filter Example</title>
+    <link rel="shortcut icon" href="#" />
+    <link rel="stylesheet" href="/lib/bootstrap/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/lib/openlayers/css/ol.css">
+    <link rel="stylesheet" href="/lib/jquery-ui/themes/base/all.css">
+    <script src="/lib/openlayers/ol.debug.js"></script>
+    <script src="/lib/jquery/jquery.min.js"></script>
+    <script src="/lib/jquery-ui/jquery-ui.min.js"></script>
+    <script src="/dist/glif.min.js"></script>
+    <style>
+        .container { margin-left: 0px; margin-right: 0px; padding-left: 0px; padding-right: 0px;}
+        #map { height: 600px; }
+        .label-tooltip { border:0; color:#f6931f; width: 40px; }
+        .slider { height: 10px; margin-left: 10px; margin-right: 10px; }
+        .trigger { padding: 5px 3px 5px 3px; }
+        label {font-weight: normal;}
+    </style>
+</head>
+<body>
+<header>
+    <h1>Color matrix image filter example (2)</h1>
+    <p>This example shows multiple simple color matrix filters used with an Openlayers 3 map. The filter can be chained and the input params for the filter altered via sliders.</p>
+</header>
+
+    <section class="content">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 ">
+                    <div id="map"></div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="trigger">
+                        <p>
+                            <label for="value-contrast">contrast:</label>
+                            <input type="text" id="value-contrast" class="label-tooltip" readonly>
+                        </p>
+                        <div id="slider-contrast" class="slider"></div>
+                    </div>
+                    <div class="trigger">
+                        <p>
+                            <label for="value-saturation">saturation:</label>
+                            <input type="text" id="value-saturation" class="label-tooltip" readonly>
+                        </p>
+                        <div id="slider-saturation" class="slider"></div>
+                    </div>
+                    <div class="trigger">
+                        <p>
+                            <label for="value-brightness">brightness:</label>
+                            <input type="text" id="value-brightness" class="label-tooltip" readonly>
+                        </p>
+                        <div id="slider-brightness" class="slider"></div>
+                    </div>
+                    <div class="trigger">
+                        <p>
+                            <label for="value-hue">hue:</label>
+                            <input type="text" id="value-hue" class="label-tooltip" readonly>
+                        </p>
+                        <div id="slider-hue" class="slider"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        // first check if webgl is enabled
+        var _canvas = document.createElement('canvas'),
+            _gl = _canvas.getContext("webgl") || _canvas.getContext("experimental-webgl");
+        if( !_gl ) {
+            alert("Couldn't get WebGL context");
+        }
+
+        if (_gl) {
+            // initialize map
+            var layer =  new ol.layer.Tile({
+                source: new ol.source.OSM()
+            });
+
+            var map = new ol.Map({
+                layers: [ layer ],
+                renderer: 'webgl',
+                target: 'map',
+                view: new ol.View({
+                    center: [0, 0],
+                    zoom: 2
+                })
+            });
+
+            var filterUpdate = false,
+                filters = {
+                    contrast: 1,
+                    saturation: 0,
+                    brightness: 1,
+                    hue: 0
+                }
+
+            layer.on('postcompose', function(evt) {
+                console.log('Postcompose event triggered');
+
+                var webglContext = evt['glContext'],
+                    canvas = webglContext.getCanvas();
+                if (webglContext !== undefined && webglContext !== null) {
+                    var gl = webglContext.getGL();
+
+                    if (!filterUpdate) {
+                        glif.reset();
+
+                        for (var filter in filters) {
+                            glif.addFilter(filter, filters[filter]);
+                        };
+
+                        filterUpdate = true;
+                    }
+
+                    glif.apply(gl, canvas);
+
+                    // for showing openlayers that the program changed
+                    // if missing openlayers will produce errors because it
+                    // expected other shaders in the webgl program
+                    webglContext.useProgram(undefined);
+                }
+            });
+
+            var createSlider = function(id, min, max, steps) {
+                var sliderId = '#slider-' + id,
+                    feedbackId = '#value-' + id;
+
+                // initialize emboss slider
+                $(sliderId).slider({
+                    range: 'min',
+                    min: min,
+                    max: max,
+                    step: steps,
+                    value: filters[id],
+                    slide: function(event, ui) {
+                        $(feedbackId).val(ui.value);
+
+                        // update the filter
+                        filters[id] = ui.value;
+                        filterUpdate = false;
+                        layer.changed();
+                    }
+                });
+                $(feedbackId).val($(sliderId).slider('value'));
+            };
+
+            // create the sliders
+            createSlider('contrast', 0, 2, 0.1);
+            createSlider('saturation', -1, 1, 0.1);
+            createSlider('brightness', 0, 2, 0.1);
+            createSlider('hue', -500, 500, 1);
+        };
+    </script>
+</body>
