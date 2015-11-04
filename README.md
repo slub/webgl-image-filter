@@ -23,7 +23,7 @@ glif.addFilter('contrast', 2);
 glif.apply(gl, canvas);
 ```
 
-More [examples](https://github.com/slub/webgl-image-filter/tree/master/examples) could be found in the example section. A demo will be added soon.
+More [examples](https://github.com/slub/webgl-image-filter/tree/master/examples) could be found in the example section. Also there is a [demo](http://jacmendt.github.io/openlayers/2015/11/04/ol3-image-filter.html).
 
 ### Filter
 - `blur( opt_size=1 )` blur with size in pixels
