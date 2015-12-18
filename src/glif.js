@@ -29,6 +29,11 @@ glif.currentFramebufferIndex_ = 0;
 glif.framebuffers_ = [ null, null];
 
 /**
+ * @type {Object}
+ */
+glif.framebufferCache_ = {};
+
+/**
  * Adds a filter to the filterchain
  *
  * Copyright © 2015 https://github.com/phoboslab/WebGLImageFilter
@@ -53,9 +58,10 @@ glif.addFilter = function(name){
  *
  * @param {WebGLRenderingContext} gl
  * @param {HTMLCanvasElement} canvas
+ * @param {boolean|undefined} opt_save
  * @export
  */
-glif.apply = function(gl, canvas) {
+glif.apply = function(gl, canvas, opt_save) {
 
     // reset draw count because a new drawing is applied
     glif.drawCount_ = 0;
@@ -82,6 +88,10 @@ glif.apply = function(gl, canvas) {
         // apply filter
         filter.func.apply(this, [gl, canvas, lastInChain].concat(filter.args || []));
     }
+
+   if (opt_save !== undefined && opt_save === true) {
+       glif.saveInCache_(gl, canvas);
+   }
 };
 
 /**
@@ -178,6 +188,33 @@ glif.draw_ = function(gl, canvas, program, lastInChain, opt_intermediateDraw) {
 };
 
 /**
+ * @param {WebGLRenderingContext} gl
+ * @param {HTMLCanvasElement} canvas
+ * @param {string|undefined}  opt_cacheKey
+ */
+glif.drawFromCache = function(gl, canvas, opt_cacheKey) {
+    var key = opt_cacheKey !== undefined ? opt_cacheKey : 'default',
+        source = glif.framebufferCache_[key].texture,
+        program = glif.getProgram_(gl, 'COPY');
+
+    glif.createClipspace_(gl);
+    // Note sure if this is a good idea; at least it makes texture loading
+    // in Ejecta instant.
+    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+    gl.viewport(0, 0, canvas.width, canvas.height);
+
+    // use actual program
+    glif.useProgram_(gl, program);
+
+    // bind the source and target and draw to triangles
+    gl.bindTexture(gl.TEXTURE_2D, source);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+    gl.uniform1f(program['uniform']['flipY'], 1 );
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+};
+
+/**
  *
  * @param {WebGLRenderingContext} gl
  * @param {HTMLCanvasElement} canvas
@@ -237,6 +274,39 @@ glif.reset = function() {
 
     // clear shader cache_
     for (var shader in glif.shader.CACHE_) delete glif.shader.CACHE_[shader];
+};
+
+/**
+ * @param {WebGLRenderingContext} gl
+ * @param {HTMLCanvasElement} canvas
+ * @param {string|undefined} opt_cacheKey
+ * @private
+ */
+glif.saveInCache_ = function(gl, canvas, opt_cacheKey) {
+    var source = glif.getTexture_(gl, canvas),
+        target = glif.createFramebuffer_(gl, canvas);
+
+    var program = glif.getProgram_(gl, 'COPY');
+
+    glif.createClipspace_(gl);
+    // Note sure if this is a good idea; at least it makes texture loading
+    // in Ejecta instant.
+    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+    gl.viewport(0, 0, canvas.width, canvas.height);
+
+    // use actual program
+    glif.useProgram_(gl, program);
+
+    // bind the source and target and draw to triangles
+    gl.bindTexture(gl.TEXTURE_2D, source);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, target.fbo);
+
+    gl.uniform1f(program['uniform']['flipY'], -1 );
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+    // put framebuffer in cache
+    var key = opt_cacheKey !== undefined ? opt_cacheKey : 'default';
+    glif.framebufferCache_[key] = target;
 };
 
 /**
