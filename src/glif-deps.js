@@ -2,4 +2,5 @@
 // Please do not edit.
 goog.addDependency('../../../../src/filter.js', ['glif.filter'], ['glif.shader'], false);
 goog.addDependency('../../../../src/glif.js', ['glif'], ['glif.filter', 'glif.shader'], false);
+goog.addDependency('../../../../src/ol-helper.js', ['glif.olHelper'], [], false);
 goog.addDependency('../../../../src/shader.js', ['glif.shader'], [], false);

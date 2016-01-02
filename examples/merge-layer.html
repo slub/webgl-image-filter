@@ -22,6 +22,7 @@
     </style>
     <script>
         goog.require('glif');
+        goog.require('glif.olHelper');
     </script>
 </head>
 <body>
@@ -56,8 +57,10 @@
                             </div>
                         </form>
                     </div>
-                    <button class="btn btn-default" id="saveImage">save</button>
-                    <button class="btn btn-default" id="drawImage">draw</button>
+                    <button class="btn btn-default" id="saveOSM">save OSM</button>
+                    <button class="btn btn-default" id="saveMapquest">save Mapquest</button>
+                    <button class="btn btn-default" id="drawOSM">draw OSM</button>
+                    <button class="btn btn-default" id="drawMapquest">draw Mapquest</button>
                 </div>
             </div>
         </div>
@@ -83,6 +86,11 @@
                     source: new ol.source.XYZ({})
                 });
 
+            // set layer ids
+            layerOsm.set('id', 'osm');
+            layerMapquest.set('id', 'mapquest');
+            outputLayer.set('id', 'result');
+
             var map = new ol.Map({
                 layers: [ layerOsm, layerMapquest, outputLayer  ],
                 renderer: 'webgl',
@@ -94,7 +102,8 @@
             });
 
             var glContext = undefined,
-                saveImage = false;
+                saveLayerOsm = false,
+                saveLayerMapquest = false;
 
             layerOsm.on('postcompose', function(evt) {
                 console.log('Postcompose event triggered');
@@ -106,10 +115,7 @@
 
                     // if (saveImage === true) debugger;
 
-                    glif.apply(gl, canvas, saveImage);
-
-                    // reset save image
-                    saveImage = false;
+                    glif.apply(gl, canvas, saveLayerOsm, 'osm');
 
                     // for showing layer that the program changed
                     // if missing layer will produce errors because it
@@ -118,31 +124,78 @@
 
                     // for backup the context
                     glContext = webglContext;
+
+                    if (saveLayerOsm) {
+                        glif.olHelper.resetPick(map);
+                        saveLayerOsm = false;
+                    }
                 }
             });
+
+            layerMapquest.on('postcompose', function(evt) {
+                console.log('Postcompose event triggered');
+
+                var webglContext = evt['glContext'],
+                        canvas = webglContext.getCanvas();
+                if (webglContext !== undefined && webglContext !== null) {
+                    var gl = webglContext.getGL();
+
+                    // if (saveImage === true) debugger;
+
+                    glif.apply(gl, canvas, saveLayerMapquest, 'mapquest');
+
+                    // for showing layer that the program changed
+                    // if missing layer will produce errors because it
+                    // expected other shaders in the webgl program
+                    webglContext.useProgram(undefined);
+
+                    // for backup the context
+                    glContext = webglContext;
+
+                    if (saveLayerMapquest) {
+                        glif.olHelper.resetPick(map);
+                        saveLayerMapquest = false;
+                    }
+                }
+            });
+
 
             var drawContext = undefined;
             outputLayer.on('postcompose', function(evt) {
                 drawContext = evt['glContext'];
             });
 
-            $('#saveImage').click(function(event) {
-                saveImage = true;
-                layerMapquest.setVisible(false);
-                layerOsm.changed()
-                /*var canvas = glContext.getCanvas(),
-                    gl = glContext.getGL();
-
-                glif.saveInCache(gl, canvas);
-
-                console.log('Save in Cache')*/
+            $('#saveOSM').click(function(event) {
+                saveLayerOsm = true;
+                glif.olHelper.pickLayer('osm', map);
+                layerOsm.changed();
             });
 
-            $('#drawImage').click(function(event) {
+            $('#saveMapquest').click(function(event) {
+                saveLayerMapquest = true;
+                glif.olHelper.pickLayer('mapquest', map);
+                layerMapquest.changed();
+            });
+
+            $('#drawOSM').click(function(event) {
                 var canvas = drawContext.getCanvas(),
                         gl = drawContext.getGL();
 
-                glif.drawFromCache(gl, canvas);
+                glif.drawFromCache(gl, canvas, 'osm');
+
+                console.log('Draw from Cache')
+
+                // for showing layer that the program changed
+                // if missing layer will produce errors because it
+                // expected other shaders in the webgl program
+                glContext.useProgram(undefined);
+            });
+
+            $('#drawMapquest').click(function(event) {
+                var canvas = drawContext.getCanvas(),
+                        gl = drawContext.getGL();
+
+                glif.drawFromCache(gl, canvas, 'mapquest');
 
                 console.log('Draw from Cache')
 

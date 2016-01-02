@@ -59,9 +59,10 @@ glif.addFilter = function (name) {
  * @param {WebGLRenderingContext} gl
  * @param {HTMLCanvasElement} canvas
  * @param {boolean|undefined} opt_save
+ * @param {string|undefined} opt_cacheKey
  * @export
  */
-glif.apply = function (gl, canvas, opt_save) {
+glif.apply = function (gl, canvas, opt_save, opt_cacheKey) {
 
     // reset draw count because a new drawing is applied
     glif.drawCount_ = 0;
@@ -83,7 +84,8 @@ glif.apply = function (gl, canvas, opt_save) {
 
 
     if (opt_save === true) {
-        glif.saveInCache_(gl, canvas);
+        var cacheKey = opt_cacheKey !== undefined ? opt_cacheKey : 'default';
+        glif.saveInCache_(gl, canvas, cacheKey);
     }
 };
 
