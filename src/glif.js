@@ -26,7 +26,7 @@ glif.currentFramebufferIndex_ = 0;
 /**
  * @type {Array<Object>}
  */
-glif.framebuffers_ = [ null, null];
+glif.framebuffers_ = [null, null];
 
 /**
  * @type {Object}
@@ -42,10 +42,10 @@ glif.framebufferCache_ = {};
  * @param {string} name
  * @export
  */
-glif.addFilter = function(name){
+glif.addFilter = function (name) {
     var args = Array.prototype.slice.call(arguments, 1),
         filter = glif.filter[name];
-        //filter = window['glif']['filter'][name];
+    //filter = window['glif']['filter'][name];
 
     glif.filterChain_.push({func: filter, args: args});
 };
@@ -61,16 +61,42 @@ glif.addFilter = function(name){
  * @param {boolean|undefined} opt_save
  * @export
  */
-glif.apply = function(gl, canvas, opt_save) {
+glif.apply = function (gl, canvas, opt_save) {
 
     // reset draw count because a new drawing is applied
     glif.drawCount_ = 0;
 
-   if (glif.filterChain_.length == 0) {
+    // should image be saved
+    var save = opt_save !== undefined ? opt_save : false;
+
+    if (glif.filterChain_.length == 0 && !save) {
         // no filters are registered
         return;
     }
 
+    //
+    // If there is a registered filter use them
+    //
+    if (glif.filterChain_.length > 0) {
+        glif.applyFilters_(gl, canvas)
+    }
+
+
+    if (opt_save === true) {
+        glif.saveInCache_(gl, canvas);
+    }
+};
+
+/**
+ * Applies the actual programmed filter chain to the given webgl context
+ *
+ * Copyright © 2015 https://github.com/phoboslab/WebGLImageFilter
+ * edit by @jacmendt
+ *
+ * @param {WebGLRenderingContext} gl
+ * @param {HTMLCanvasElement} canvas
+ */
+glif.applyFilters_ = function(gl, canvas) {
     // reset framebuffers for preventing the production of artefacts
     glif.framebuffers_ = [null, null];
 
@@ -88,10 +114,6 @@ glif.apply = function(gl, canvas, opt_save) {
         // apply filter
         filter.func.apply(this, [gl, canvas, lastInChain].concat(filter.args || []));
     }
-
-   if (opt_save !== undefined && opt_save === true) {
-       glif.saveInCache_(gl, canvas);
-   }
 };
 
 /**
@@ -100,12 +122,12 @@ glif.apply = function(gl, canvas, opt_save) {
  *
  * @param {WebGLRenderingContext} gl
  */
-glif.createClipspace_ = function(gl) {
+glif.createClipspace_ = function (gl) {
     // Create the clipspace if we don't have it yet
     // Create the vertex buffer for the two triangles [x, y, u, v] * 6
     var vertices = new Float32Array([
-        -1, -1, 0, 1,  1, -1, 1, 1,  -1, 1, 0, 0,
-        -1, 1, 0, 0,  1, -1, 1, 1,  1, 1, 1, 0
+        -1, -1, 0, 1, 1, -1, 1, 1, -1, 1, 0, 0,
+        -1, 1, 0, 0, 1, -1, 1, 1, 1, 1, 1, 0
     ]);
     var vertexBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
@@ -121,7 +143,7 @@ glif.createClipspace_ = function(gl) {
  * @param {WebGLRenderingContext} gl
  * @param {HTMLCanvasElement} canvas
  */
-glif.createFramebuffer_ = function(gl, canvas) {
+glif.createFramebuffer_ = function (gl, canvas) {
     var fbo = gl.createFramebuffer();
     gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
 
@@ -157,7 +179,7 @@ glif.createFramebuffer_ = function(gl, canvas) {
  * @param {boolean} lastInChain
  * @param {boolean=} opt_intermediateDraw Force to draw to a normal buffer
  */
-glif.draw_ = function(gl, canvas, program, lastInChain, opt_intermediateDraw) {
+glif.draw_ = function (gl, canvas, program, lastInChain, opt_intermediateDraw) {
     var source = null,
         target = null,
         flipY = null;
@@ -183,7 +205,7 @@ glif.draw_ = function(gl, canvas, program, lastInChain, opt_intermediateDraw) {
     gl.bindTexture(gl.TEXTURE_2D, source);
     gl.bindFramebuffer(gl.FRAMEBUFFER, target);
 
-    gl.uniform1f(program['uniform']['flipY'], (flipY ? -1 : 1) );
+    gl.uniform1f(program['uniform']['flipY'], (flipY ? -1 : 1));
     gl.drawArrays(gl.TRIANGLES, 0, 6);
 };
 
@@ -192,7 +214,7 @@ glif.draw_ = function(gl, canvas, program, lastInChain, opt_intermediateDraw) {
  * @param {HTMLCanvasElement} canvas
  * @param {string|undefined}  opt_cacheKey
  */
-glif.drawFromCache = function(gl, canvas, opt_cacheKey) {
+glif.drawFromCache = function (gl, canvas, opt_cacheKey) {
     var key = opt_cacheKey !== undefined ? opt_cacheKey : 'default',
         source = glif.framebufferCache_[key].texture,
         program = glif.getProgram_(gl, 'COPY');
@@ -210,7 +232,7 @@ glif.drawFromCache = function(gl, canvas, opt_cacheKey) {
     gl.bindTexture(gl.TEXTURE_2D, source);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
-    gl.uniform1f(program['uniform']['flipY'], 1 );
+    gl.uniform1f(program['uniform']['flipY'], 1);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
 };
 
@@ -221,7 +243,7 @@ glif.drawFromCache = function(gl, canvas, opt_cacheKey) {
  * @param {number} index
  * @return {?}
  */
-glif.getFramebuffer_ = function(gl, canvas, index) {
+glif.getFramebuffer_ = function (gl, canvas, index) {
     glif.framebuffers_[index] = glif.framebuffers_[index] || glif.createFramebuffer_(gl, canvas);
     return glif.framebuffers_[index];
 };
@@ -233,7 +255,7 @@ glif.getFramebuffer_ = function(gl, canvas, index) {
  * @param {string} shaderKey
  * @return {WebGLProgram}
  */
-glif.getProgram_ = function(gl, shaderKey) {
+glif.getProgram_ = function (gl, shaderKey) {
     var key = shaderKey.toUpperCase(),
         program = glif.shader.CACHE_[key] !== undefined ? glif.shader.CACHE_[key] :
             glif.shader.compileFragmentShader(gl, glif.shader[key]);
@@ -251,7 +273,7 @@ glif.getProgram_ = function(gl, shaderKey) {
  * @param {HTMLCanvasElement} canvas
  * @return {WebGLTexture}
  */
-glif.getTexture_ = function(gl, canvas) {
+glif.getTexture_ = function (gl, canvas) {
     var texture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, texture);
 
@@ -268,7 +290,7 @@ glif.getTexture_ = function(gl, canvas) {
 /**
  * @export
  */
-glif.reset = function() {
+glif.reset = function () {
     // clear filter chain
     glif.filterChain_ = [];
 
@@ -282,7 +304,7 @@ glif.reset = function() {
  * @param {string|undefined} opt_cacheKey
  * @private
  */
-glif.saveInCache_ = function(gl, canvas, opt_cacheKey) {
+glif.saveInCache_ = function (gl, canvas, opt_cacheKey) {
     var source = glif.getTexture_(gl, canvas),
         target = glif.createFramebuffer_(gl, canvas);
 
@@ -301,7 +323,7 @@ glif.saveInCache_ = function(gl, canvas, opt_cacheKey) {
     gl.bindTexture(gl.TEXTURE_2D, source);
     gl.bindFramebuffer(gl.FRAMEBUFFER, target.fbo);
 
-    gl.uniform1f(program['uniform']['flipY'], -1 );
+    gl.uniform1f(program['uniform']['flipY'], -1);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
 
     // put framebuffer in cache
@@ -315,13 +337,13 @@ glif.saveInCache_ = function(gl, canvas, opt_cacheKey) {
  * @param {WebGLRenderingContext} gl
  * @param {WebGLProgram} program
  */
-glif.useProgram_ = function(gl, program) {
+glif.useProgram_ = function (gl, program) {
     gl.useProgram(program);
 
     var floatSize = Float32Array.BYTES_PER_ELEMENT;
     var vertSize = 4 * floatSize;
     gl.enableVertexAttribArray(program['attribute']['pos']);
-    gl.vertexAttribPointer(program['attribute']['pos'], 2, gl.FLOAT, false, vertSize , 0 * floatSize);
+    gl.vertexAttribPointer(program['attribute']['pos'], 2, gl.FLOAT, false, vertSize, 0 * floatSize);
     gl.enableVertexAttribArray(program['attribute']['uv']);
     gl.vertexAttribPointer(program['attribute']['uv'], 2, gl.FLOAT, false, vertSize, 2 * floatSize);
 };

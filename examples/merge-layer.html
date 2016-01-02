@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>Save buffer</title>
+    <title>Merge Layer Examples</title>
     <link rel="shortcut icon" href="#" />
     <link rel="stylesheet" href="/lib/bootstrap/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="/lib/openlayers/css/ol.css">
@@ -26,7 +26,7 @@
 </head>
 <body>
     <header>
-        <h1>Save buffer example</h1>
+        <h1>Merge Layers Examples</h1>
         <p></p>
     </header>
 
@@ -41,10 +41,19 @@
                         <form>
                             <div class="checkbox">
                                 <label>
-                                    <input type="checkbox" id="detectEdges">detectEdges
+                                    <input type="checkbox" id="visibleOSM" checked="true">OSM
                                 </label>
                             </div>
-
+                            <div class="checkbox">
+                                <label>
+                                    <input type="checkbox" id="visibleMapquest" checked="true">Mapquest
+                                </label>
+                            </div>
+                            <div class="checkbox">
+                                <label>
+                                    <input type="checkbox" id="visibleResult" checked>Result
+                                </label>
+                            </div>
                         </form>
                     </div>
                     <button class="btn btn-default" id="saveImage">save</button>
@@ -64,12 +73,18 @@
 
         if (_gl) {
             // initialize map
-            var layer =  new ol.layer.Tile({
-                source: new ol.source.OSM()
-            });
+            var layerOsm = new ol.layer.Tile({
+                    source: new ol.source.OSM()
+                }),
+                layerMapquest = new ol.layer.Tile({
+                    source: new ol.source.MapQuest({layer: 'osm'})
+                }),
+                outputLayer = new ol.layer.Tile({
+                    source: new ol.source.XYZ({})
+                });
 
             var map = new ol.Map({
-                layers: [ layer ],
+                layers: [ layerOsm, layerMapquest, outputLayer  ],
                 renderer: 'webgl',
                 target: 'map',
                 view: new ol.View({
@@ -78,26 +93,16 @@
                 })
             });
 
-            var filterUpdate = false,
-                detectEdges = false,
-                glContext = undefined,
+            var glContext = undefined,
                 saveImage = false;
-            layer.on('postcompose', function(evt) {
+
+            layerOsm.on('postcompose', function(evt) {
                 console.log('Postcompose event triggered');
 
                 var webglContext = evt['glContext'],
                     canvas = webglContext.getCanvas();
                 if (webglContext !== undefined && webglContext !== null) {
                     var gl = webglContext.getGL();
-
-                    if (!filterUpdate) {
-                        glif.reset();
-
-                        if (detectEdges)
-                            glif.addFilter('detectEdges');
-
-                        filterUpdate = true;
-                    }
 
                     // if (saveImage === true) debugger;
 
@@ -106,8 +111,8 @@
                     // reset save image
                     saveImage = false;
 
-                    // for showing openlayers that the program changed
-                    // if missing openlayers will produce errors because it
+                    // for showing layer that the program changed
+                    // if missing layer will produce errors because it
                     // expected other shaders in the webgl program
                     webglContext.useProgram(undefined);
 
@@ -116,15 +121,15 @@
                 }
             });
 
-
-            $('#detectEdges').click(function(event) {
-                detectEdges = event.target.checked;
-                filterUpdate = false;
-                layer.changed(); });
+            var drawContext = undefined;
+            outputLayer.on('postcompose', function(evt) {
+                drawContext = evt['glContext'];
+            });
 
             $('#saveImage').click(function(event) {
                 saveImage = true;
-                layer.changed()
+                layerMapquest.setVisible(false);
+                layerOsm.changed()
                 /*var canvas = glContext.getCanvas(),
                     gl = glContext.getGL();
 
@@ -134,18 +139,33 @@
             });
 
             $('#drawImage').click(function(event) {
-                var canvas = glContext.getCanvas(),
-                        gl = glContext.getGL();
+                var canvas = drawContext.getCanvas(),
+                        gl = drawContext.getGL();
 
                 glif.drawFromCache(gl, canvas);
 
                 console.log('Draw from Cache')
 
-                // for showing openlayers that the program changed
-                // if missing openlayers will produce errors because it
+                // for showing layer that the program changed
+                // if missing layer will produce errors because it
                 // expected other shaders in the webgl program
                 glContext.useProgram(undefined);
-            })
+            });
+
+
+            // Set visibility of the layer
+            $('#visibleOsm').click(function(event) {
+                if (layerOsm.getVisible() !== event.target.checked)
+                    layerOsm.setVisible(event.target.checked);
+            });
+            $('#visibleMapquest').click(function(event) {
+                if (layerMapquest.getVisible() !== event.target.checked)
+                    layerMapquest.setVisible(event.target.checked);
+            });
+            $('#visibleResul').click(function(event) {
+                if (outputLayer.getVisible() !== event.target.checked)
+                    outputLayer.setVisible(event.target.checked);
+            });
         };
     </script>
 </body>
