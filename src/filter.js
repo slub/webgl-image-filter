@@ -248,6 +248,22 @@ glif.filter.hue = function(gl, canvas, lastInChain, opt_hue) {
 };
 
 /**
+ * Inverts the color of an image
+ *
+ * @param {WebGLRenderingContext} gl
+ * @param {HTMLCanvasElement} canvas
+ * @param {boolean} lastInChain
+ * @expose
+ */
+glif.filter.invert = function(gl, canvas, lastInChain) {
+    // Can we ignore the alpha value? Makes things a bit faster.
+    var program = glif.getProgram_(gl, 'INVERT');
+    // use actual program
+    glif.useProgram_(gl, program);
+    glif.draw_(gl, canvas, program, lastInChain);
+};
+
+/**
  * Copyright © 2015 https://github.com/phoboslab/WebGLImageFilter
  * edit by @jacmendt
  *

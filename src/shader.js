@@ -227,6 +227,26 @@ glif.shader.COPY = [
 ].join('\n');
 
 /**
+ * Fragment shader for a 3x3 convolution matrix.
+ *
+ * Copyright © 2015 https://github.com/phoboslab/WebGLImageFilter
+ * edit by @jacmendt
+ *
+ * @type {string}
+ * @expose
+ */
+glif.shader.INVERT = [
+    'precision highp float;',
+    'varying vec2 vUv;',
+    'uniform sampler2D texture;',
+    '',
+    'void main(void) {',
+    'vec4 c = texture2D(texture, vUv);',
+    'gl_FragColor = vec4(1.0 - c.r, 1.0 - c.g, 1.0 - c.b, c.a);',
+    '}'
+].join('\n');
+
+/**
  * Basic vertex shader
  *
  * Copyright © 2015 https://github.com/phoboslab/WebGLImageFilter

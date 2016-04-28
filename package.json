@@ -1,6 +1,6 @@
 {
   "name": "webgl-image-filter",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Library which allows to apply multiple image filters. It is mainly based on the work from Dominic Szablewski (https://github.com/phoboslab/WebGLImageFilter). Further good information about webgl image processing can be found on http://webglfundamentals.org/webgl/lessons/webgl-image-processing.html.",
   "dependencies": {
 	"express": "^4.10.1"

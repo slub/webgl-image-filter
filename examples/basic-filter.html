@@ -84,6 +84,11 @@
                                     <input type="checkbox" id="vintagePinhole">vintagePinhole
                                 </label>
                             </div>
+                            <div class="checkbox">
+                                <label>
+                                    <input type="checkbox" id="invert">Invert
+                                </label>
+                            </div>
                         </form>
                     </div>
                 </div>
@@ -125,7 +130,8 @@
                     sepia: false,
                     shiftToBGR: false,
                     technicolor: false,
-                    vintagePinhole: false
+                    vintagePinhole: false,
+                    invert: false
                 };
 
             layer.on('postcompose', function(evt) {
@@ -170,6 +176,7 @@
             $('#shiftToBGR').click(function(event) { updateFilter('shiftToBGR', event.target.checked); });
             $('#technicolor').click(function(event) { updateFilter('technicolor', event.target.checked); });
             $('#vintagePinhole').click(function(event) { updateFilter('vintagePinhole', event.target.checked); });
+            $('#invert').click(function(event) { updateFilter('invert', event.target.checked); });
         };
     </script>
 </body>

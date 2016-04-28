@@ -48,3 +48,16 @@ More [examples](https://github.com/slub/webgl-image-filter/tree/master/examples)
 - `technicolor()` vintage colors
 - `vintagePinhole()` vintage colors
 
+## Install
+
+For updating the closure dependencies run:
+
+```
+python lib/closure-library/closure/bin/build/depswriter.py --root_with_prefix="src ../../../../src" > src/glif-deps.js
+```
+
+For building the library run:
+
+```
+node_modules\gulp\bin\gulp.js
+```
